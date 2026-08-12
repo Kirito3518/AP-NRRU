@@ -1,0 +1,13 @@
+.git
+.next
+node_modules
+.env*
+!.env.example
+coverage
+docs
+.codex-tmp
+.worktrees
+*.xlsx
+*.tsbuildinfo
+npm-debug.log*
+pnpm-debug.log*
