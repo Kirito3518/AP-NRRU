@@ -58,3 +58,22 @@ describe("production compose stack", () => {
     expect(compose).toContain('profiles: ["tools"]');
   });
 });
+
+describe("deployment documentation", () => {
+  it("documents required variables without development credentials", () => {
+    expect(existsSync(".env.example")).toBe(true);
+    const example = read(".env.example");
+    expect(example).toContain("POSTGRES_DB=");
+    expect(example).toContain("POSTGRES_USER=");
+    expect(example).toContain("POSTGRES_PASSWORD=");
+    expect(example).toContain("DATABASE_URL=");
+    expect(example).not.toContain("POSTGRES_PASSWORD=postgres");
+  });
+
+  it("documents the Coolify and Cloudflare handoff", () => {
+    const readme = read("README.md");
+    expect(readme).toContain("ap.0jay-shop.com");
+    expect(readme).toContain("127.0.0.1:3002");
+    expect(readme).toContain("docker compose --profile tools run --rm seed");
+  });
+});
