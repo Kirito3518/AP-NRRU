@@ -1,34 +1,51 @@
 services:
   postgres:
-    image: postgres:17
-    container_name: ap-nrru-postgres
+    image: postgres:17-alpine
     restart: unless-stopped
-
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: ap_nrru
-
-    ports:
-      - "5432:5432"
-
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: ap-nrru-pgadmin
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: unless-stopped
-
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
     ports:
-      - "5050:80"
-
+      - "127.0.0.1:3002:3000"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --spider http://127.0.0.1:3000/login || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  seed:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    profiles: ["tools"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["pnpm", "db:seed"]
 
 volumes:
   postgres_data:
