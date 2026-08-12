@@ -1,0 +1,32 @@
+export type EquipmentView = {
+  id: string;
+  systemCode: string;
+  assetCode: string | null;
+  category: string | null;
+  serialNumber: string | null;
+  receivedYear: string | null;
+  budgetSource: string | null;
+  cpu: string | null;
+  ram: string | null;
+  storage: string | null;
+  operatingSystem: string | null;
+  ipAddress: string | null;
+  macAddress: string | null;
+  networkSpeed: string | null;
+  connectionStatus: string | null;
+  floor: string | null;
+  room: string | null;
+  location: string | null;
+  condition: string | null;
+  approximateAge: string | null;
+  problem: string | null;
+  recommendation: string | null;
+  note: string | null;
+  status: "ACTIVE" | "PROBLEM" | "MAINTENANCE" | "MOVED" | "MISSING" | "RETIRED";
+  department: { name: string } | null;
+  building: { name: string } | null;
+  deviceType: { name: string } | null;
+  owner: { name: string } | null;
+};
+
+export const statusLabels = { ACTIVE: "ใช้งาน", PROBLEM: "มีปัญหา", MAINTENANCE: "ซ่อมบำรุง", MOVED: "ย้ายจุด", MISSING: "สูญหาย", RETIRED: "จำหน่าย" } as const;

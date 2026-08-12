@@ -1,0 +1,145 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                 String             @id @default(cuid())
+  username           String             @unique
+  passwordHash       String
+  displayName        String
+  role               UserRole           @default(ADMIN)
+  mustChangePassword Boolean            @default(true)
+  sessions           Session[]
+  updatedEquipment   Equipment[]        @relation("EquipmentUpdatedBy")
+  equipmentHistory   EquipmentHistory[]
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([tokenHash])
+  @@index([userId])
+}
+
+model Equipment {
+  id               String                 @id @default(cuid())
+  systemCode       String                 @unique
+  assetCode        String?                @unique
+  category         String?
+  serialNumber     String?
+  receivedYear     String?
+  budgetSource     String?
+  cpu              String?
+  ram              String?
+  storage          String?
+  operatingSystem  String?
+  ipAddress        String?
+  macAddress       String?
+  networkSpeed     String?
+  connectionStatus String?
+  floor            String?
+  room             String?
+  location         String?
+  condition        String?
+  approximateAge   String?
+  problem          String?
+  recommendation   String?
+  note             String?
+  status           EquipmentStatus        @default(ACTIVE)
+  departmentId     String?
+  department       Department?             @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  buildingId       String?
+  building         Building?               @relation(fields: [buildingId], references: [id], onDelete: SetNull)
+  deviceTypeId     String?
+  deviceType       DeviceType?              @relation(fields: [deviceTypeId], references: [id], onDelete: SetNull)
+  ownerId          String?
+  owner            Owner?                   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  updatedById      String?
+  updatedBy        User?                    @relation("EquipmentUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  histories        EquipmentHistory[]
+  deletedAt        DateTime?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+
+  @@index([status])
+  @@index([departmentId])
+  @@index([buildingId])
+  @@index([deviceTypeId])
+  @@index([deletedAt])
+}
+
+model EquipmentHistory {
+  id          String                 @id @default(cuid())
+  equipmentId String
+  equipment   Equipment              @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  action      EquipmentHistoryAction
+  changes     Json?
+  userId      String?
+  user        User?                  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt   DateTime               @default(now())
+
+  @@index([equipmentId, createdAt])
+  @@index([userId])
+}
+
+model Building {
+  id        String      @id @default(cuid())
+  name      String      @unique
+  code      String?     @unique
+  equipment Equipment[]
+  createdAt DateTime    @default(now())
+}
+
+model Department {
+  id        String      @id @default(cuid())
+  name      String      @unique
+  equipment Equipment[]
+  createdAt DateTime    @default(now())
+}
+
+model Owner {
+  id        String      @id @default(cuid())
+  name      String      @unique
+  phone     String?
+  email     String?
+  equipment Equipment[]
+  createdAt DateTime    @default(now())
+}
+
+model DeviceType {
+  id        String      @id @default(cuid())
+  name      String      @unique
+  equipment Equipment[]
+  createdAt DateTime    @default(now())
+}
+
+enum UserRole {
+  ADMIN
+}
+
+enum EquipmentStatus {
+  ACTIVE
+  PROBLEM
+  MAINTENANCE
+  MOVED
+  MISSING
+  RETIRED
+}
+
+enum EquipmentHistoryAction {
+  CREATED
+  UPDATED
+  DELETED
+}
