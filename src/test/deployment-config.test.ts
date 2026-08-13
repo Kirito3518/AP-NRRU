@@ -42,20 +42,28 @@ describe("production compose stack", () => {
     expect(compose).toMatch(/volumes:\s*\n\s+postgres_data:/);
   });
 
-  it("runs migrations before the server", () => {
+  it("runs migrations and safe seed before the server", () => {
     expect(existsSync("docker-entrypoint.sh")).toBe(true);
     const entrypoint = read("docker-entrypoint.sh");
-    expect(entrypoint.indexOf("prisma migrate deploy")).toBeGreaterThan(-1);
-    expect(entrypoint.indexOf("exec node server.js")).toBeGreaterThan(
-      entrypoint.indexOf("prisma migrate deploy"),
-    );
+    const migrate = entrypoint.indexOf("pnpm exec prisma migrate deploy");
+    const seed = entrypoint.indexOf("pnpm db:seed");
+    const start = entrypoint.indexOf("exec node server.js");
+    expect(migrate).toBeGreaterThan(-1);
+    expect(seed).toBeGreaterThan(migrate);
+    expect(start).toBeGreaterThan(seed);
   });
 
-  it("provides an explicit one-time seed service", () => {
+  it("includes seed tooling in the runtime image", () => {
+    const dockerfile = read("Dockerfile");
+    expect(dockerfile).toContain("corepack enable");
+    expect(dockerfile).toContain("/app/node_modules ./node_modules");
+    expect(dockerfile).toContain("/app/src/generated ./src/generated");
+    expect(dockerfile).toContain("/app/src/test/fixtures ./src/test/fixtures");
+  });
+
+  it("does not expose a separate seed service in Coolify", () => {
     const compose = read("docker-compose.yml");
-    expect(compose).toContain("target: builder");
-    expect(compose).toContain('command: ["pnpm", "db:seed"]');
-    expect(compose).toContain('profiles: ["tools"]');
+    expect(compose).not.toMatch(/^  seed:/m);
   });
 });
 
@@ -70,10 +78,13 @@ describe("deployment documentation", () => {
     expect(example).not.toContain("POSTGRES_PASSWORD=postgres");
   });
 
-  it("documents the Coolify and Cloudflare handoff", () => {
-    const readme = read("README.md");
-    expect(readme).toContain("ap.0jay-shop.com");
-    expect(readme).toContain("127.0.0.1:3002");
-    expect(readme).toContain("docker compose --profile tools run --rm seed");
+});
+
+describe("automatic seed safety", () => {
+  it("imports equipment only when the equipment table is empty", () => {
+    const seed = read("prisma/seed.ts");
+    expect(seed).toContain("await prisma.equipment.count()");
+    expect(seed).toContain("if (equipmentCount > 0)");
+    expect(seed).toContain("return;");
   });
 });

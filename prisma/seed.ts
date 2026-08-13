@@ -23,6 +23,12 @@ async function main() {
     },
   });
 
+  const equipmentCount = await prisma.equipment.count();
+  if (equipmentCount > 0) {
+    console.log("Equipment data already exists; skipping initial equipment seed.");
+    return;
+  }
+
   for (const row of equipmentSeedRows) {
     const department = row.department
       ? await prisma.department.upsert({

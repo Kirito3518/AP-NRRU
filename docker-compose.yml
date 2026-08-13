@@ -34,18 +34,5 @@ services:
       retries: 3
       start_period: 30s
 
-  seed:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: builder
-    profiles: ["tools"]
-    environment:
-      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
-    depends_on:
-      postgres:
-        condition: service_healthy
-    command: ["pnpm", "db:seed"]
-
 volumes:
   postgres_data:
